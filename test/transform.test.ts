@@ -17,6 +17,25 @@ function buildXml(xml: any): string {
 	return new Builder({ headless: true }).buildObject(xml)
 }
 
+/**
+ * Extract the ordered list of tag names from an SVG content string.
+ */
+function extractElementOrder(content: string): string[] {
+  const tags = content.match(/<(\w+)[\s>]/g);
+  if (!tags) return [];
+  return tags.map((t) => t.replace(/</, "").replace(/[\s>]/, ""));
+}
+/**
+ * Extract the inner content of the root <svg> element.
+ */
+function extractSvgContent(svg: string): string {
+  const match = svg.match(/<svg[^>]*>([\s\S]*?)<\/svg>/);
+  if (!match) {
+    throw new Error("No <svg> found in SVG output");
+  }
+  return match[1].trim();
+}
+
 describe('generateId', () => {
 	it('produces a deterministic hash prefixed with _', () => {
 		const id = generateId('hello world')
@@ -235,5 +254,22 @@ describe('transformSvg full pipeline', () => {
 		const result = buildXml(xml)
 
 		expect(result).toMatchSnapshot()
+	})
+})
+
+describe('element order is preserved', () => {
+	it('preserves element order after transformations', async () => {
+		const raw = await readFile(fixture('element-order.svg'), 'utf8')
+		const { xml } = await parseSvg(raw, 'element-order.svg')
+
+		const result = buildXml(xml)
+
+		const originalSvg = extractSvgContent(raw)
+		const originalOrder = extractElementOrder(originalSvg)
+		
+		const content = extractSvgContent(result)
+		const transformedOrder = extractElementOrder(content)
+
+		expect(transformedOrder).toEqual(originalOrder)
 	})
 })

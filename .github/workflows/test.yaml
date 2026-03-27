@@ -1,8 +1,10 @@
 name: CI — Tests
 
 on:
+  push:
+    branches:
+      - mistress
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -29,20 +31,16 @@ jobs:
 
     steps:
       - name: Checkout repository (safe for forks)
-        # pinned to tag: v6.0.2 -> sha: de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6
         with:
           fetch-depth: 0
-          # Do not persist credentials so workflows from forked PRs cannot use the token
           persist-credentials: false
 
       - name: Install pnpm
-        # pinned to tag: v4.1.0 -> sha: fc06bc1257f339d1d5d8b3a19a8cae5388b55320
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 #4
 
       - name: Use Node and cache pnpm
-        # pinned to tag: v6.3.0 -> sha: 53b83947a5a98c8d113130e565377fae1a50d02f
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f #v6
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
@@ -51,7 +49,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Override Vite version for matrix
-        # install the matrix's vite into node_modules without changing package.json
         run: pnpm add -D "vite@${{ matrix.vite }}"
 
       - name: Run tests
@@ -59,13 +56,3 @@ jobs:
           TEST_VITE: ${{ matrix.vite }}
           TEST_NODE: ${{ matrix.node }}
         run: pnpm test
-
-      - name: Upload logs on failure
-        if: failure()
-        # pinned to tag: v7.0.0 -> sha: bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
-        with:
-          name: ci-logs-node${{ matrix.node }}-vite${{ matrix.vite }}
-          path: |
-            pnpm-debug.log
-            ./**/test-results/**/*.log
